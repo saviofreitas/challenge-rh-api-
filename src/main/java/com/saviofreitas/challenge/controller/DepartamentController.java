@@ -25,8 +25,12 @@ import com.saviofreitas.challenge.repository.DepartamentRepository;
 @Validated
 public class DepartamentController {
 
-	@Autowired
 	private DepartamentRepository repository;
+	
+	@Autowired
+	public DepartamentController(DepartamentRepository repository) {
+		this.repository = repository;
+	}
 	
 	@GetMapping
 	public ResponseEntity<List<Departament>> findAll() {

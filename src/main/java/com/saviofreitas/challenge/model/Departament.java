@@ -1,19 +1,17 @@
 package com.saviofreitas.challenge.model;
 
 import java.io.Serializable;
-import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
 
 @Entity
-@Table(name = "departaments")
+@Table(name = "setor")
 public class Departament implements Serializable {
 	
 	private static final long serialVersionUID = -8019270299539302951L;
@@ -22,12 +20,23 @@ public class Departament implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	
-	@NotBlank(message = "{departament.description.required}")
-	@Column(name = "description", nullable = false, unique = true)
+	@NotBlank(message = "Campo descrição é obrigatório")
+	@Column(name = "descricao", nullable = false, unique = true)
 	private String description;
 	
-	@OneToMany(mappedBy = "departament")
-	private List<Person> people;
+	public Departament() {
+	}
+	
+	public Departament(Long id, @NotBlank(message = "Campo descrição é obrigatório") String description) {
+		super();
+		this.id = id;
+		this.description = description;
+	}
+
+	public Departament(@NotBlank(message = "Campo descrição é obrigatório") String description) {
+		super();
+		this.description = description;
+	}
 
 	public Long getId() {
 		return id;
@@ -78,6 +87,17 @@ public class Departament implements Serializable {
 			return false;
 		}
 		return true;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("{ 'id': ");
+		builder.append(id);
+		builder.append(", 'description': '");
+		builder.append(description);
+		builder.append("' }");
+		return builder.toString();
 	}
 	
 	

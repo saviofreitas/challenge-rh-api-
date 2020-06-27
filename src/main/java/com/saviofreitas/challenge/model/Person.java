@@ -16,7 +16,7 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
 @Entity
-@Table(name = "people", uniqueConstraints = @UniqueConstraint(columnNames = {"id", "email"}))
+@Table(name = "pessoas", uniqueConstraints = @UniqueConstraint(columnNames = {"id", "email"}))
 public class Person implements Serializable {
 
 	private static final long serialVersionUID = 8178539457997826699L;
@@ -26,11 +26,11 @@ public class Person implements Serializable {
 	private Long id;
 	
 	@NotBlank(message = "Campo obrigatório")
-	@Column(name = "first_name", nullable = false)
+	@Column(name = "nome", nullable = false)
 	private String firstName;
 	
 	@NotBlank(message = "Campo obrigatório")
-	@Column(name = "last_name", nullable = false)
+	@Column(name = "sobrenome", nullable = false)
 	private String lastName;
 
 	@NotBlank(message = "Campo obrigatório")
@@ -39,7 +39,7 @@ public class Person implements Serializable {
 	private String email;
 	
 	@ManyToOne(optional = false, cascade = CascadeType.MERGE)
-	@JoinColumn(name = "departament_id")
+	@JoinColumn(name = "setor_id")
 	private Departament departament;
 
 	public Long getId() {
@@ -116,5 +116,24 @@ public class Person implements Serializable {
 		}
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("{'id': ");
+		builder.append(id);
+		builder.append(", 'firstName': '");
+		builder.append(firstName);
+		builder.append("', 'lastName': '");
+		builder.append(lastName);
+		builder.append("', 'email': '");
+		builder.append(email);
+		builder.append("', 'departament': ");
+		builder.append(departament);
+		builder.append("}");
+		return builder.toString();
+	}
+	
+	
 
 }

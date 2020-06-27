@@ -25,8 +25,12 @@ import com.saviofreitas.challenge.repository.PersonRepository;
 @Validated
 public class PersonController {
 	
-	@Autowired
 	private PersonRepository repository;
+	
+	@Autowired
+	public PersonController(PersonRepository repository) {
+		this.repository = repository;
+	}
 
 	@GetMapping
 	public ResponseEntity<List<Person>> findAll() {
