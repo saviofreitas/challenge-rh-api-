@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,9 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 import com.saviofreitas.challenge.model.Person;
 import com.saviofreitas.challenge.repository.PersonRepository;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+
 @RestController
 @RequestMapping(value = "/people", produces = "application/json")
-@Validated
+@Api(value = "Pessoas")
 public class PersonController {
 	
 	private PersonRepository repository;
@@ -31,7 +33,8 @@ public class PersonController {
 	public PersonController(PersonRepository repository) {
 		this.repository = repository;
 	}
-
+	
+	@ApiOperation(value = "Mostra lista de pessoas")
 	@GetMapping
 	public ResponseEntity<List<Person>> findAll() {
 		return new ResponseEntity<List<Person>>(repository.findAll(), new HttpHeaders(), HttpStatus.OK);

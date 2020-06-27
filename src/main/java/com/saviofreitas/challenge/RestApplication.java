@@ -13,7 +13,7 @@ public class RestApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(RestApplication.class, args);
 	}
-
+	
 	@Bean
 	public MessageSource messageSource() {
 		ReloadableResourceBundleMessageSource messageSource = new ReloadableResourceBundleMessageSource();
