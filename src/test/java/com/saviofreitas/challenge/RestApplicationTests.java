@@ -5,12 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import com.saviofreitas.challenge.controller.DepartamentController;
 import com.saviofreitas.challenge.controller.PersonController;
 import com.saviofreitas.challenge.controller.auth.AuthController;
 
 @SpringBootTest
+@ActiveProfiles(profiles = "test")
 class RestApplicationTests {
 
 	@Autowired
