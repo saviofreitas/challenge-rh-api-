@@ -19,12 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.saviofreitas.challenge.model.Person;
 import com.saviofreitas.challenge.repository.PersonRepository;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-
 @RestController
 @RequestMapping(value = "/people", produces = "application/json")
-@Api(value = "Pessoas")
 public class PersonController {
 	
 	private PersonRepository repository;
@@ -34,7 +30,7 @@ public class PersonController {
 		this.repository = repository;
 	}
 	
-	@ApiOperation(value = "Mostra lista de pessoas")
+	
 	@GetMapping
 	public ResponseEntity<List<Person>> findAll() {
 		return new ResponseEntity<List<Person>>(repository.findAll(), new HttpHeaders(), HttpStatus.OK);
