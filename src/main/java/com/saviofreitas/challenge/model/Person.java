@@ -11,9 +11,12 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import javax.persistence.UniqueConstraint;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "pessoas", uniqueConstraints = @UniqueConstraint(columnNames = {"id", "email"}))
@@ -41,6 +44,16 @@ public class Person implements Serializable {
 	@ManyToOne(optional = false, cascade = CascadeType.MERGE)
 	@JoinColumn(name = "setor_id")
 	private Departament departament;
+	
+	public Person() {}
+
+	public Person(String firstName, String lastName, String email, Departament departament) {
+		super();
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.email = email;
+		this.departament = departament;
+	}
 
 	public Long getId() {
 		return id;
@@ -80,6 +93,12 @@ public class Person implements Serializable {
 
 	public void setDepartament(Departament departament) {
 		this.departament = departament;
+	}
+	
+	@JsonIgnore
+	@Transient
+	public String getFullName() {
+		return String.format("%s %s", firstName, lastName);
 	}
 
 	@Override

@@ -1,80 +1,43 @@
 package com.saviofreitas.challenge.controller.auth;
 
-import static com.saviofreitas.challenge.util.TestUtil.mapToJson;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static io.restassured.RestAssured.given;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.testng.annotations.Test;
 
-import com.saviofreitas.challenge.config.JwtAuthenticationEntryPoint;
 import com.saviofreitas.challenge.security.AccountCredentials;
-import com.saviofreitas.challenge.service.JwtUserDetailsService;
 
-@WebMvcTest(AuthController.class)
-@ActiveProfiles(profiles = "test")
-public class AuthControllerTests {
+@TestPropertySource("file:src/test/resources/application.properties")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class AuthControllerTests extends AbstractTestNGSpringContextTests {
 
-	private static final String BASE_URL = "/authenticate";
-
-	@Autowired
-	private MockMvc mockMvc;
-
-//	@Autowired
-//	private JWTUtil jwtUtil;
+	private static final String BASE_URL = "/api/authenticate";
 	
-	@MockBean
-	private JwtUserDetailsService userDetailsService;
-	
-	@MockBean
-	private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-	
+	@LocalServerPort
+	private int port;
+
 	@Test
 	public void authenticate() throws Exception {
-
 		AccountCredentials credentials = new AccountCredentials();
 		credentials.setUsername("ibyte");
 		credentials.setPassword("password");
-		
-		String json = mapToJson(credentials);
 
-		mockMvc.perform(post(BASE_URL)
-				.content(json)
-				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.characterEncoding("utf-8"))
-				.andExpect(status().isOk());
-		
-		verify(userDetailsService, times(1)).loadUserByUsername("ibyte");
+		given().basePath(BASE_URL).port(port).contentType("application/json")
+			.body(credentials).when().post()
+			.then().statusCode(200);
 	}
 	
 	@Test
-	public void authenticatinFailed() throws Exception {
-
+	public void authenticatinFailed() {
 		AccountCredentials credentials = new AccountCredentials();
 		credentials.setUsername("folgado");
-		credentials.setPassword("password");
-		
-		String json = mapToJson(credentials);
+		credentials.setPassword("123456");
 
-		mockMvc.perform(post(BASE_URL)
-				.content(json)
-				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-				.characterEncoding("utf-8"))
-				.andExpect(status().is(401));
-		
-		verify(userDetailsService, times(0)).loadUserByUsername("folgado");
+		given().basePath(BASE_URL).port(port).contentType("application/json")
+			.body(credentials).when().post()
+			.then().statusCode(401);
 	}
-	
-
-
-
-	
 }

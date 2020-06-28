@@ -5,6 +5,7 @@ import static io.restassured.RestAssured.given;
 import java.util.Arrays;
 
 import org.assertj.core.api.SoftAssertions;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.test.context.TestPropertySource;
@@ -15,11 +16,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.saviofreitas.challenge.model.Departament;
+import com.saviofreitas.challenge.repository.DepartamentRepository;
 import com.saviofreitas.challenge.security.AccountCredentials;
 
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.LogDetail;
-import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.specification.RequestSpecification;
 
@@ -28,12 +29,13 @@ import io.restassured.specification.RequestSpecification;
 public class DepartamentControllerTests extends AbstractTestNGSpringContextTests {
 
 	private static final String BASE_URL = "/api/departaments";
+	
+	@Autowired
+	private DepartamentRepository departamentRepository;
 
 	private RequestSpecification specification;
 
 	private Departament departament;
-	
-	private Long id;
 	
 	@LocalServerPort
 	private int port;
@@ -51,7 +53,6 @@ public class DepartamentControllerTests extends AbstractTestNGSpringContextTests
 
 		specification = new RequestSpecBuilder().addHeader("Authorization", "Bearer " + token)
 				.setBasePath(BASE_URL).setPort(port)
-				.addFilter(new RequestLoggingFilter(LogDetail.ALL))
 				.addFilter(new ResponseLoggingFilter(LogDetail.ALL))
 				.build();
 	}
@@ -65,13 +66,7 @@ public class DepartamentControllerTests extends AbstractTestNGSpringContextTests
 	
 	@AfterMethod
 	public void cleanUp() {
-	    deleteDepartament(id);
-	}
-	
-	private void deleteDepartament(Long id) {
-	    if (id != null) {
-	    	given().spec(specification).when().delete(String.format("%s", id)).then().statusCode(200);
-	    }
+	    departamentRepository.deleteAll();
 	}
 	
 	private Departament retrieveDepartament() {
@@ -82,16 +77,15 @@ public class DepartamentControllerTests extends AbstractTestNGSpringContextTests
 	                    .extract().as(Departament[].class))
 	            .reduce((first, second) -> second)
 	            .orElse(null);
-	    if (retrievedDepartament != null) {
-	      id = retrievedDepartament.getId();
-	    } else {
-	      id = null;
-	    }
-	    return retrievedDepartament;
-	  }
 
+	    return retrievedDepartament;
+	}
+
+	/**
+	 * GET /departaments
+	 */
 	@Test
-	public void findAll() throws Exception {
+	public void findAll() {
 		Departament departament = retrieveDepartament();
 		Departament[] expected = { departament };
 		
@@ -104,14 +98,28 @@ public class DepartamentControllerTests extends AbstractTestNGSpringContextTests
 	    assertions.assertThat(actual).isEqualTo(expected);
 	    assertions.assertAll();
 	}
+	
+	/**
+	 * Without token<br/>
+	 * GET /departaments
+	 */
+	@Test
+	public void unauthorizedWhenFindAllWithoutToken() {
+		given().basePath(BASE_URL).port(port).when().get().then().statusCode(401);
+	}
 
+	/**
+	 * POST /departaments
+	 */
 	@Test
 	public void create() {
 		Departament retrievedDepartament = retrieveDepartament();
-
 	    assertDepartament(retrievedDepartament, departament);
 	}
 
+	/**
+	 * PUT /departaments/{id}
+	 */
 	@Test
 	public void update() {
 		String updatedDescription = "Descrição atualizada";
@@ -133,8 +141,11 @@ public class DepartamentControllerTests extends AbstractTestNGSpringContextTests
 	    assertDepartament(retrievedDepartament, updatedDepartament);
 	}
 
+	/**
+	 * DELETE /departaments/{id}
+	 */
 	@Test
-	public void destroy() throws Exception {
+	public void destroy() {
 		Departament retrieved = retrieveDepartament();
 
 	    given().spec(specification).when()

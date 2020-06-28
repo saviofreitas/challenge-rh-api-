@@ -1,161 +1,209 @@
 package com.saviofreitas.challenge.controller;
 
-import static com.saviofreitas.challenge.util.TestUtil.mapToJson;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static io.restassured.RestAssured.given;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 
-import org.junit.jupiter.api.Test;
+import org.assertj.core.api.SoftAssertions;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
-import com.saviofreitas.challenge.WebSecurityConfiguration;
 import com.saviofreitas.challenge.model.Departament;
 import com.saviofreitas.challenge.model.Person;
+import com.saviofreitas.challenge.repository.DepartamentRepository;
 import com.saviofreitas.challenge.repository.PersonRepository;
+import com.saviofreitas.challenge.security.AccountCredentials;
 
-@WebMvcTest(PersonController.class)
-@ContextConfiguration(classes = {WebSecurityConfiguration.class})
-@ActiveProfiles(profiles = "test")
-public class PersonControllerTests {
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.filter.log.LogDetail;
+import io.restassured.filter.log.ResponseLoggingFilter;
+import io.restassured.specification.RequestSpecification;
+
+@TestPropertySource("file:src/test/resources/application.properties")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class PersonControllerTests extends AbstractTestNGSpringContextTests {
 	
-	private static final String BASE_URL = "/people";
-
+	private static final String BASE_URL = "/api/people";
+	
 	@Autowired
-    private MockMvc mockMvc;
+	private DepartamentRepository departamentRepository;
 	
-	@MockBean
+	@Autowired
 	private PersonRepository personRepository;
 
-	@Test
-	public void findAll() throws Exception {		
-		Person person = getPerson();
-		person.setId(1L);
+	private RequestSpecification specification;
+	
+	private Person person;
+	
+	@LocalServerPort
+	private int port;
+	
+	@BeforeClass
+	public void authorization() {
+		AccountCredentials credentials = new AccountCredentials();
+		credentials.setUsername("ibyte");
+		credentials.setPassword("password");
+
+		String token = given().basePath("/api/authenticate").port(port)
+				.contentType("application/json").body(credentials)
+				.when().post().then()
+				.statusCode(200).extract().body().jsonPath().getString("token");
+
+		specification = new RequestSpecBuilder().addHeader("Authorization", "Bearer " + token)
+				.setBasePath(BASE_URL).setPort(port)
+				.addFilter(new ResponseLoggingFilter(LogDetail.ALL))
+				.build();
+	}
+
+	@BeforeMethod
+	public void insertDepartament() {
+		Departament departament = departamentRepository.saveAndFlush(new Departament("Secretaria"));
 		
-		List<Person> people = Arrays.asList(person);
+		person = new Person("Virgulino", "Ferreira", "virgulino@lampiao.com", departament);
 		
-		given(personRepository.findAll()).willReturn(people);
-		
-		this.mockMvc.perform(get(BASE_URL))
-				.andExpect(status().isOk())
-				.andExpect(content().json(people.toString()));
+		given().spec(specification).contentType("application/json")
+		.body(person).when().post().then().statusCode(201);
 	}
 	
-	@Test
-	public void create() throws Exception {
-		Person person = getPerson();
-		String json = mapToJson(person);
-
-		mockMvc.perform(post(BASE_URL)
-						.content(json)
-						.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-						.characterEncoding("utf-8"))
-				.andExpect(status().isCreated());
-
-		verify(personRepository, times(1)).save(person);
-	}
-
-	@Test
-	public void findById() throws Exception {
-		Person person = getPerson();
-		person.setId(1L);
-		given(personRepository.findById(1L)).willReturn(Optional.of(person));
-		this.mockMvc.perform(get(BASE_URL + "/1")).andExpect(status().isOk())
-				.andExpect(content().json(person.toString()));
+	@AfterMethod
+	public void cleanUp() {
+	    personRepository.deleteAll();
+	    departamentRepository.deleteAll();
 	}
 	
+	/**
+	 * Without token<br/>
+	 * GET /people
+	 */
 	@Test
-	public void findByDepartamentId() throws Exception {
-		Person p1 = getPerson();
-		p1.setId(1L);
-		
-		Person p2 = getPerson();
-		p2.setId(2L);
-		p2.setEmail("p2@email.com");
-		
-		Person p3 = getPerson();
-		p3.setId(3L);
-		p3.setEmail("p3@email.com");
-		
-		List<Person> peopleByDepartament = Arrays.asList(p1, p2, p3);
-		
-		given(personRepository.findByDepartamentId(1L)).willReturn(peopleByDepartament);
-		this.mockMvc.perform(get(BASE_URL + "/departament/1"))
-		.andExpect(status().isOk())
-		.andExpect(content().json(peopleByDepartament.toString()));
-		
-		List<Person> emptyList = new ArrayList<Person>();
-		this.mockMvc.perform(get(BASE_URL + "/departament/2"))
-		.andExpect(status().isOk())
-		.andExpect(content().json(emptyList.toString()));
-	}
-
-	@Test
-	public void update() throws Exception {
-		Person person = getPerson();
-		person.setId(1L);
-		given(personRepository.findById(1L)).willReturn(Optional.of(person));
-
-		Person personUpdate = person;
-		personUpdate.setEmail("other@email.com");
-		String jsonUpdate = mapToJson(personUpdate);
-
-		this.mockMvc.perform(put(BASE_URL + "/1")
-							.content(jsonUpdate)
-							.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-							.characterEncoding("utf-8"))
-					.andExpect(status().isOk());
-		
-		verify(personRepository, times(1)).save(personUpdate);
-		
-		this.mockMvc.perform(put(BASE_URL + "/2")
-					.content(jsonUpdate)
-					.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-					.characterEncoding("utf-8"))
-			.andExpect(status().is(404));
+	public void unauthorizedWhenFindAllWithoutToken() {
+		given().basePath(BASE_URL).port(port).when().get().then().statusCode(401);
 	}
 	
+	/**
+	 * GET /people
+	 */
+	@Test
+	public void findAll() {
+		Person person = retrievePerson();
+		Person[] expected = { person };
+		
+		Person[] actual = given().spec(specification)
+                					.when().get()
+            						.then().statusCode(200)
+            						.extract().as(Person[].class);
+		
+		SoftAssertions assertions = new SoftAssertions();
+	    assertions.assertThat(actual).isEqualTo(expected);
+	    assertions.assertAll();
+	}
+	
+	/**
+	 * GET /people/departament/{departamentId}
+	 */
+	@Test
+	public void findByDepartament() {
+		Departament manager = departamentRepository.saveAndFlush(new Departament("Diretoria"));
+		Person p1 = personRepository.saveAndFlush(new Person("P1", "P1", "p1@email.com", manager));
+		Person p2 = personRepository.saveAndFlush(new Person("P2", "P2", "p2@email.com", manager));
+		Person p3 = personRepository.saveAndFlush(new Person("P3", "P3", "p3@email.com", manager));
+		
+		Person[] expectedPeopleManager = { p1, p2, p3 };
+		
+		Departament financial = departamentRepository.saveAndFlush(new Departament("Financeiro"));
+		Person p4 = personRepository.saveAndFlush(new Person("P4", "P4", "p4@email.com", financial));
+		Person p5 = personRepository.saveAndFlush(new Person("P4", "P5", "p5@email.com", financial));
+		
+		Person[] expectedPeopleFinancial = { p4, p5 };
+		
+		Person[] actualManager = given().spec(specification).basePath(BASE_URL + "/departament/" + manager.getId())
+                					.when().get()
+            						.then().statusCode(200)
+            						.extract().as(Person[].class);
+		
+		Person[] actualFinancial = given().spec(specification).basePath(BASE_URL + "/departament/" + financial.getId())
+				.when().get()
+				.then().statusCode(200)
+				.extract().as(Person[].class);
+		
+		SoftAssertions assertions = new SoftAssertions();
+	    assertions.assertThat(actualManager).isEqualTo(expectedPeopleManager);
+	    assertions.assertThat(actualFinancial).isEqualTo(expectedPeopleFinancial);
+	    assertions.assertThat(actualFinancial).isNotEqualTo(actualManager);
+	    assertions.assertAll();
+	}
+
+	/**
+	 * POST /people
+	 */
+	@Test
+	public void create() {
+		Person retrievedPerson = retrievePerson();
+	    assertPerson(retrievedPerson, person);
+	}
+	
+	/**
+	 * PUT /people/{id}
+	 */
+	@Test
+	public void update() {
+		Departament manager = departamentRepository.saveAndFlush(new Departament("Diretoria"));
+	    Person updatedPerson = new Person("Virgulino", "Ferreira", "virgulino@lampiao.com", manager);
+	    updatedPerson.setEmail("outro@email.com");
+	    
+	    Person retrievedPerson = retrievePerson();
+
+	    given().spec(specification).contentType("application/json")
+	        .when().body(updatedPerson).put(String.format("%s", retrievedPerson.getId()))
+	        .then().statusCode(200);
+
+	    retrievedPerson = retrievePerson();
+
+	    assertPerson(retrievedPerson, updatedPerson);
+	}
+	
+	/**
+	 * DELETE /people/{id}
+	 * @throws Exception
+	 */
 	@Test
 	public void destroy() throws Exception {
-		Person person = getPerson();
-		person.setId(1L);
-		given(personRepository.findById(1L)).willReturn(Optional.of(person));
+		Person retrieved = retrievePerson();
 
-		this.mockMvc.perform(delete(BASE_URL + "/1"))
-					.andExpect(status().isOk());
-		
-		verify(personRepository, times(1)).deleteById(1L);
-		
-		this.mockMvc.perform(put(BASE_URL + "/2"))
-					.andExpect(status().is(404));
+	    given().spec(specification).when()
+        	.delete(String.format("%s", retrieved.getId()))
+	        .then().statusCode(200);
+
+	    retrieved = retrievePerson();
+
+	    SoftAssertions assertions = new SoftAssertions();
+	    assertions.assertThat(retrieved).isNull();
+	    assertions.assertAll();
 	}
 	
-	private Person getPerson() {
-		Person person = new Person();
-		person.setFirstName("John");
-		person.setLastName("Doe");
-		person.setEmail("johndoe@email.com");
-		
-		Departament departament = new Departament(1L, "Secretaria");
-		person.setDepartament(departament);
-		
-		return person;
+	private Person retrievePerson() {
+	    Person retrievedPerson = Arrays.stream(given().spec(specification)
+	    										.when().get().then().statusCode(200)
+	    										.extract().as(Person[].class))
+	            						.reduce((first, second) -> second)
+	            						.orElse(null);
+	    return retrievedPerson;
+	  }
+	
+	private void assertPerson(Person actual, Person expected) {
+	    SoftAssertions assertions = new SoftAssertions();
+	    assertions.assertThat(actual.getFullName()).isEqualTo(expected.getFullName());
+	    assertions.assertThat(actual.getEmail()).isEqualTo(expected.getEmail());
+	    assertions.assertThat(actual.getDepartament()).isEqualTo(expected.getDepartament());
+	    assertions.assertThat(actual.getId()).isGreaterThan(0);
+	    assertions.assertAll();
 	}
+	
 }
