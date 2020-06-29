@@ -22,4 +22,4 @@
 Arquivos swagger.yml e swagger.json na raíz do projeto
 
 ### Execução
-docker run -p 8000:8080 saviofreitas/challenge-ibyte:1.0.0
+docker run -p 8000:8080 saviofreitas/challenge-ibyte:1.0.1

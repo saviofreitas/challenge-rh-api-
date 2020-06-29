@@ -11,7 +11,7 @@
 	</parent>
 	<groupId>com.saviofreitas.challenge</groupId>
 	<artifactId>rh-api</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<name>rh-api</name>
 	<description>Api para disponibilização de recursos ao RH</description>
 

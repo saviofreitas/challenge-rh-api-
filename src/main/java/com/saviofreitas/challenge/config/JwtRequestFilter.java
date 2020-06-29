@@ -1,8 +1,6 @@
 package com.saviofreitas.challenge.config;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -29,11 +27,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
 	@Autowired
 	private JwtUserDetailsService jwtUserDetailsService;
-
-	private List<String> excludeUrlPatterns = Arrays.asList("/", "/index.html", "/swagger-ui.css",
-			"/swagger-ui.js", "/swagger-ui.js.map", "/swagger-ui-bundle.js",
-			"/swagger-ui-bundle.js.map", "/swagger-ui-standalone-preset.js",
-			"/swagger-ui-standalone-preset.js.map", "/swagger.json");
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -69,8 +62,4 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 		filterChain.doFilter(request, response);
 	}
 
-	@Override
-	protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-		return excludeUrlPatterns.stream().anyMatch(exclude -> exclude.equalsIgnoreCase(request.getServletPath()));
-	}
 }
